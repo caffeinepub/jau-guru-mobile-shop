@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const STORAGE_KEY = "jau_guru_orders";
 
 export interface StoredOrder {
@@ -9,12 +11,6 @@ export interface StoredOrder {
   items: { name: string; quantity: number; price: number }[];
   total: number;
   status: string;
-}
-
-function saveOrder(order: StoredOrder) {
-  const existing = getOrders();
-  existing.push(order);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 }
 
 function getOrders(): StoredOrder[] {
@@ -33,5 +29,14 @@ function clearOrders() {
 }
 
 export function useOrderHistory() {
-  return { orders: getOrders(), saveOrder, clearOrders };
+  const [orders, setOrders] = useState<StoredOrder[]>(() => getOrders());
+
+  function saveOrder(order: StoredOrder) {
+    const existing = getOrders().slice().reverse(); // get in original insert order
+    existing.push(order);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    setOrders(getOrders()); // re-read reversed for display
+  }
+
+  return { orders, saveOrder, clearOrders };
 }
