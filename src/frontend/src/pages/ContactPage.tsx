@@ -128,14 +128,14 @@ export default function ContactPage({
           </div>
           <div className="rounded-xl overflow-hidden h-40 bg-gray-800 flex items-center justify-center border border-gray-700">
             <a
-              href="https://maps.google.com/?q=Jau+Guru+Mobile+Shop"
+              href="https://maps.app.goo.gl/g2yG7XYf88k48DWD7"
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center gap-2 text-purple-400 hover:text-yellow-400 transition-colors"
               data-ocid="contact.maps.link"
             >
               <MapPin className="w-8 h-8" />
-              <span className="text-sm font-medium">Open in Google Maps</span>
+              <span className="text-sm font-medium">View Shop Location</span>
               <span className="text-xs text-gray-500">
                 Jau Guru Mobile Shop
               </span>
