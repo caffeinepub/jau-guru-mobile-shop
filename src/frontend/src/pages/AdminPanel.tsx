@@ -43,11 +43,10 @@ import {
   useDeleteProduct,
   useOrders,
   useProducts,
-  useRepairBookings,
-  useUpdateBookingStatus,
   useUpdateOrderStatus,
   useUpdateProduct,
 } from "../hooks/useQueries";
+import { type LocalRepairBooking, getLocalRepairBookings } from "./RepairPage";
 
 const ADMIN_PHONE = "7077109109";
 const ADMIN_PASSWORD = "Anup1234";
@@ -95,11 +94,12 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState<ProductFormData>(emptyForm);
 
+  // Local repair bookings
+  const [localBookings, setLocalBookings] = useState<LocalRepairBooking[]>([]);
+
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: orders, isLoading: ordersLoading } = useOrders();
-  const { data: bookings, isLoading: bookingsLoading } = useRepairBookings();
   const updateOrderStatus = useUpdateOrderStatus();
-  const updateBookingStatus = useUpdateBookingStatus();
   const addProduct = useAddProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -108,6 +108,7 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
     if (phone === ADMIN_PHONE && password === ADMIN_PASSWORD) {
       setIsLoggedIn(true);
       setLoginError("");
+      setLocalBookings(getLocalRepairBookings());
     } else {
       setLoginError("Invalid phone number or password");
     }
@@ -118,6 +119,14 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
     setPhone("");
     setPassword("");
     setLoginError("");
+  };
+
+  const updateLocalBookingStatus = (id: number, status: string) => {
+    const bookings = getLocalRepairBookings().map((b) =>
+      b.id === id ? { ...b, status } : b,
+    );
+    localStorage.setItem("repairBookings", JSON.stringify(bookings));
+    setLocalBookings(bookings);
   };
 
   const openAddProduct = () => {
@@ -303,7 +312,9 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
           <TabsList className="mb-4">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="bookings">Repair Bookings</TabsTrigger>
+            <TabsTrigger value="bookings">
+              Repair Bookings ({localBookings.length})
+            </TabsTrigger>
           </TabsList>
 
           {/* Products Tab */}
@@ -481,16 +492,9 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
           {/* Repair Bookings Tab */}
           <TabsContent value="bookings">
             <h2 className="font-bold text-gray-800 mb-4">
-              Repair Bookings ({bookings?.length ?? 0})
+              Repair Bookings ({localBookings.length})
             </h2>
-            {bookingsLoading ? (
-              <div
-                data-ocid="admin.loading_state"
-                className="text-center py-12"
-              >
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-              </div>
-            ) : (bookings || []).length === 0 ? (
+            {localBookings.length === 0 ? (
               <div
                 data-ocid="admin.empty_state"
                 className="bg-white rounded-xl border p-12 text-center text-gray-400"
@@ -506,17 +510,15 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
                       <TableHead>Customer</TableHead>
                       <TableHead>Device</TableHead>
                       <TableHead>Issue</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(bookings || []).map((b, idx) => (
-                      <TableRow
-                        key={b.id.toString()}
-                        data-ocid={`admin.row.${idx + 1}`}
-                      >
+                    {localBookings.map((b, idx) => (
+                      <TableRow key={b.id} data-ocid={`admin.row.${idx + 1}`}>
                         <TableCell className="font-mono text-sm">
-                          #{Number(b.id)}
+                          #{b.id.toString().slice(-6)}
                         </TableCell>
                         <TableCell>
                           <div>
@@ -532,14 +534,14 @@ export default function AdminPanel({ onNavigate }: AdminPanelProps) {
                         <TableCell className="text-sm text-gray-500 max-w-xs truncate">
                           {b.issue}
                         </TableCell>
+                        <TableCell className="text-xs text-gray-400">
+                          {b.createdAt}
+                        </TableCell>
                         <TableCell>
                           <Select
                             value={b.status}
                             onValueChange={(value) =>
-                              updateBookingStatus.mutate({
-                                id: b.id,
-                                status: value,
-                              })
+                              updateLocalBookingStatus(b.id, value)
                             }
                           >
                             <SelectTrigger

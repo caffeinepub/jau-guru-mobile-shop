@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { OrderItem } from "../backend.d";
 import { useCart } from "../context/CartContext";
+import { useOrderHistory } from "../hooks/useOrderHistory";
 import { usePlaceOrder } from "../hooks/useQueries";
 
 export default function CartDrawer() {
@@ -20,6 +21,7 @@ export default function CartDrawer() {
     setIsCartOpen,
   } = useCart();
   const placeOrder = usePlaceOrder();
+  const { saveOrder } = useOrderHistory();
   const [form, setForm] = useState({
     customerName: "",
     phone: "",
@@ -47,6 +49,20 @@ export default function CartDrawer() {
         address: form.address,
         items: orderItems,
         total: BigInt(Math.round(totalPrice)),
+      });
+      saveOrder({
+        id: Number(orderId),
+        date: new Date().toLocaleDateString("en-IN"),
+        customerName: form.customerName,
+        phone: form.phone,
+        address: form.address,
+        items: items.map((i) => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          price: Number(i.product.price),
+        })),
+        total: Math.round(totalPrice),
+        status: "Confirmed",
       });
       toast.success(`Order #${Number(orderId)} placed successfully! 🎉`);
       clearCart();

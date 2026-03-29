@@ -10,6 +10,7 @@ import { CartProvider } from "./context/CartContext";
 import AdminPanel from "./pages/AdminPanel";
 import ContactPage from "./pages/ContactPage";
 import HomePage from "./pages/HomePage";
+import OrderHistoryPage from "./pages/OrderHistoryPage";
 import RepairPage from "./pages/RepairPage";
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ function AppContent() {
         {currentPage === "repair" && <RepairPage onNavigate={navigate} />}
         {currentPage === "admin" && <AdminPanel onNavigate={navigate} />}
         {currentPage === "contact" && <ContactPage onNavigate={navigate} />}
+        {currentPage === "orders" && <OrderHistoryPage onNavigate={navigate} />}
         {currentPage === "categories" && (
           <HomePage searchQuery={searchQuery} onNavigate={navigate} />
         )}

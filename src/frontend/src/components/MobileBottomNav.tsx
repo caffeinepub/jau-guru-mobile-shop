@@ -2,6 +2,7 @@ import {
   Grid3X3,
   Home,
   MessageCircle,
+  Package,
   ShoppingCart,
   Wrench,
 } from "lucide-react";
@@ -22,6 +23,7 @@ export default function MobileBottomNav({
     { id: "home", label: "Home", icon: Home },
     { id: "categories", label: "Categories", icon: Grid3X3 },
     { id: "repair", label: "Repair", icon: Wrench },
+    { id: "orders", label: "Orders", icon: Package },
     { id: "contact", label: "Contact", icon: MessageCircle },
   ];
 

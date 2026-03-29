@@ -6,7 +6,6 @@ import { ArrowLeft, CheckCircle2, Loader2, Wrench } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useSubmitRepairBooking } from "../hooks/useQueries";
 
 const COMMON_ISSUES = [
   "Screen Cracked/Broken",
@@ -23,6 +22,39 @@ interface RepairPageProps {
   onNavigate: (page: string) => void;
 }
 
+export interface LocalRepairBooking {
+  id: number;
+  customerName: string;
+  phone: string;
+  deviceModel: string;
+  issue: string;
+  status: string;
+  createdAt: string;
+}
+
+export function getLocalRepairBookings(): LocalRepairBooking[] {
+  try {
+    return JSON.parse(localStorage.getItem("repairBookings") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalRepairBooking(
+  booking: Omit<LocalRepairBooking, "id" | "status" | "createdAt">,
+): number {
+  const bookings = getLocalRepairBookings();
+  const id = Date.now();
+  bookings.push({
+    ...booking,
+    id,
+    status: "Pending",
+    createdAt: new Date().toLocaleString(),
+  });
+  localStorage.setItem("repairBookings", JSON.stringify(bookings));
+  return id;
+}
+
 export default function RepairPage({ onNavigate }: RepairPageProps) {
   const [form, setForm] = useState({
     customerName: "",
@@ -32,7 +64,7 @@ export default function RepairPage({ onNavigate }: RepairPageProps) {
   });
   const [submitted, setSubmitted] = useState(false);
   const [bookingId, setBookingId] = useState<number | null>(null);
-  const submitBooking = useSubmitRepairBooking();
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +72,15 @@ export default function RepairPage({ onNavigate }: RepairPageProps) {
       toast.error("Please fill all required fields");
       return;
     }
+    setLoading(true);
     try {
-      const id = await submitBooking.mutateAsync(form);
-      setBookingId(Number(id));
+      const id = saveLocalRepairBooking(form);
+      setBookingId(id);
       setSubmitted(true);
     } catch {
       toast.error("Failed to submit booking. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -218,10 +253,10 @@ export default function RepairPage({ onNavigate }: RepairPageProps) {
           <Button
             data-ocid="repair.submit_button"
             type="submit"
-            disabled={submitBooking.isPending}
+            disabled={loading}
             className="w-full flipkart-gradient text-white font-bold h-12 text-base"
           >
-            {submitBooking.isPending ? (
+            {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Submitting...
