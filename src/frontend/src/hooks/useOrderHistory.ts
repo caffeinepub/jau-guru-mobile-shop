@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "jau_guru_orders";
 
@@ -13,29 +13,43 @@ export interface StoredOrder {
   status: string;
 }
 
-function getOrders(): StoredOrder[] {
+function readOrders(): StoredOrder[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as StoredOrder[];
+    // Return newest first
     return parsed.slice().reverse();
   } catch {
     return [];
   }
 }
 
-function clearOrders() {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
 export function useOrderHistory() {
-  const [orders, setOrders] = useState<StoredOrder[]>(() => getOrders());
+  const [orders, setOrders] = useState<StoredOrder[]>([]);
+
+  // Always refresh from localStorage when hook mounts
+  useEffect(() => {
+    setOrders(readOrders());
+  }, []);
 
   function saveOrder(order: StoredOrder) {
-    const existing = getOrders().slice().reverse(); // get in original insert order
-    existing.push(order);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-    setOrders(getOrders()); // re-read reversed for display
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const existing: StoredOrder[] = raw
+        ? (JSON.parse(raw) as StoredOrder[])
+        : [];
+      existing.push(order);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+      setOrders(readOrders());
+    } catch {
+      // localStorage unavailable — silently skip
+    }
+  }
+
+  function clearOrders() {
+    localStorage.removeItem(STORAGE_KEY);
+    setOrders([]);
   }
 
   return { orders, saveOrder, clearOrders };

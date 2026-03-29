@@ -28,6 +28,7 @@ export default function CartDrawer() {
     address: "",
   });
   const [step, setStep] = useState<"cart" | "checkout">("cart");
+  const [isPlacing, setIsPlacing] = useState(false);
 
   if (!isCartOpen) return null;
 
@@ -36,14 +37,9 @@ export default function CartDrawer() {
       toast.error("Please fill all fields");
       return;
     }
-    const orderItems: OrderItem[] = items.map((i) => ({
-      productId: i.product.id,
-      name: i.product.name,
-      quantity: BigInt(i.quantity),
-      price: i.product.price,
-    }));
 
-    // Always save to localStorage so customers can see their orders
+    setIsPlacing(true);
+
     const localOrder = {
       id: Date.now(),
       date: new Date().toLocaleDateString("en-IN"),
@@ -59,25 +55,35 @@ export default function CartDrawer() {
       status: "Confirmed",
     };
 
-    try {
-      const orderId = await placeOrder.mutateAsync({
+    // Save to localStorage FIRST — this ensures order history always works
+    saveOrder(localOrder);
+
+    // Then try the backend (fire and forget — don't block the UX)
+    const orderItems: OrderItem[] = items.map((i) => ({
+      productId: i.product.id,
+      name: i.product.name,
+      quantity: BigInt(i.quantity),
+      price: i.product.price,
+    }));
+
+    placeOrder
+      .mutateAsync({
         customerName: form.customerName,
         phone: form.phone,
         address: form.address,
         items: orderItems,
         total: BigInt(Math.round(totalPrice)),
+      })
+      .catch(() => {
+        // Backend unavailable — order is already saved locally, nothing to do
       });
-      localOrder.id = Number(orderId);
-    } catch {
-      // Backend failed — still proceed with local order ID
-    }
 
-    saveOrder(localOrder);
     toast.success(`Order #${localOrder.id} placed successfully! 🎉`);
     clearCart();
     setIsCartOpen(false);
     setStep("cart");
     setForm({ customerName: "", phone: "", address: "" });
+    setIsPlacing(false);
   };
 
   return (
@@ -274,10 +280,10 @@ export default function CartDrawer() {
               <Button
                 data-ocid="cart.submit_button"
                 onClick={handlePlaceOrder}
-                disabled={placeOrder.isPending}
+                disabled={isPlacing}
                 className="w-full yellow-gradient text-gray-900 font-bold h-12 text-base"
               >
-                {placeOrder.isPending ? (
+                {isPlacing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Placing Order...
